@@ -19,8 +19,6 @@ public class HelloServlet extends HttpServlet {
         PrintWriter out = response.getWriter();
 
         // 输出响应内容
-        out.println("<html><body>");
-        out.println("<h1>Hello from Java Servlet!</h1>");
-        out.println("</body></html>");
+        out.println("Hello from Java Servlet!");
     }
 }
