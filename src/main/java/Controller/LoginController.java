@@ -13,17 +13,13 @@ import javax.servlet.http.*;
 import java.io.*;
 import java.sql.*;
 
-@WebServlet(name = "LoginServlet", value = "/login")
-public class LoginServlet extends HttpServlet {
+@WebServlet(name = "LoginController", value = "/login")
+public class LoginController extends HttpServlet {
 
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         response.setContentType("application/json;charset=utf-8");
         PrintWriter out = response.getWriter();
 
-        // 从请求中获取用户名和密码
-//        String role = request.getParameter("role");
-//        String username = request.getParameter("username");
-//        String password = request.getParameter("password");
         // 读取请求体
         BufferedReader reader = request.getReader();
         StringBuilder json = new StringBuilder();
@@ -31,7 +27,7 @@ public class LoginServlet extends HttpServlet {
         while ((line = reader.readLine()) != null) {
             json.append(line);
         }
-// 确保请求体不为空
+        // 确保请求体不为空
         if (json.length() == 0) {
             response.setStatus(HttpServletResponse.SC_BAD_REQUEST); // 400 错误
             response.getWriter().write("Request body is empty");
