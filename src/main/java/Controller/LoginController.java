@@ -72,6 +72,7 @@ public class LoginController extends HttpServlet {
                 // 登录成功
                 jsonResponse.addProperty("success", true);
                 jsonResponse.addProperty("message", "Login successful");
+                jsonResponse.addProperty("username", user.getUsername()); // Include username in the response
             } else {
                 // 登录失败
                 jsonResponse.addProperty("success", false);
@@ -81,6 +82,7 @@ public class LoginController extends HttpServlet {
                     jsonResponse.addProperty("message", "Incorrect password");
                 }
             }
+
         } else if ("admin".equals(role)) {
             AdminDao adminDao = new AdminDao();
             Admin admin = null;
@@ -94,6 +96,7 @@ public class LoginController extends HttpServlet {
                 // 登录成功
                 jsonResponse.addProperty("success", true);
                 jsonResponse.addProperty("message", "Admin Login successful");
+                jsonResponse.addProperty("username", admin.getAdminName()); // Include username in the response
             } else {
                 // 登录失败
                 jsonResponse.addProperty("success", false);
