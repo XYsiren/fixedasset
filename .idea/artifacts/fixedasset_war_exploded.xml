@@ -24,6 +24,18 @@
           <element id="library" level="project" name="Maven: ch.qos.logback:logback-core:1.2.3" />
           <element id="library" level="project" name="Maven: org.slf4j:slf4j-api:1.7.25" />
           <element id="library" level="project" name="Maven: com.google.code.gson:gson:2.8.8" />
+          <element id="library" level="project" name="Maven: org.apache.tomcat:tomcat-catalina:9.0.50" />
+          <element id="library" level="project" name="Maven: org.apache.tomcat:tomcat-servlet-api:9.0.50" />
+          <element id="library" level="project" name="Maven: org.apache.tomcat:tomcat-jsp-api:9.0.50" />
+          <element id="library" level="project" name="Maven: org.apache.tomcat:tomcat-el-api:9.0.50" />
+          <element id="library" level="project" name="Maven: org.apache.tomcat:tomcat-juli:9.0.50" />
+          <element id="library" level="project" name="Maven: org.apache.tomcat:tomcat-annotations-api:9.0.50" />
+          <element id="library" level="project" name="Maven: org.apache.tomcat:tomcat-api:9.0.50" />
+          <element id="library" level="project" name="Maven: org.apache.tomcat:tomcat-jni:9.0.50" />
+          <element id="library" level="project" name="Maven: org.apache.tomcat:tomcat-coyote:9.0.50" />
+          <element id="library" level="project" name="Maven: org.apache.tomcat:tomcat-util:9.0.50" />
+          <element id="library" level="project" name="Maven: org.apache.tomcat:tomcat-util-scan:9.0.50" />
+          <element id="library" level="project" name="Maven: org.apache.tomcat:tomcat-jaspic-api:9.0.50" />
         </element>
       </element>
       <element id="directory" name="META-INF">

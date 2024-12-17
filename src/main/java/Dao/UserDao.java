@@ -45,7 +45,9 @@ public class UserDao {
             String password = rs.getString("password");
             String email = rs.getString("email");
             String phone = rs.getString("phone");
-            user = new User(userID,username, password, email, phone);
+            String isdeleted = rs.getString("isdeleted");
+            String deletedby = rs.getString("deletedby");
+            user = new User(userID,username, password, email, phone, isdeleted, deletedby);
         }
         rs.close();
         pstate.close();
@@ -69,9 +71,11 @@ public class UserDao {
                     String password = rs.getString("password");
                     String email = rs.getString("email");
                     String phone = rs.getString("phone");
+                    String isdeleted = rs.getString("isdeleted");
+                    String deletedby = rs.getString("deletedby");
 
                     // 使用查询结果创建 User 对象
-                    user = new User(userID, name, password, email, phone);
+                    user = new User(userID, name, password, email, phone, isdeleted, deletedby);
                 }
             }
         } catch (SQLException e) {
@@ -90,15 +94,14 @@ public class UserDao {
      * @param phone 用户电话
      * @return 如果添加成功，返回新创建的User对象，失败返回null
      */
-    public static User addUser(String username, String password, String email, String phone) {
+    public static User addUser(String username, String password, String email, String phone,String isdeleted,String deletedby) {
         // 首先检查用户是否已经存在
         if (exists(username)) {
             System.err.println("c此用户已存在！");
             return null;  // 如果用户已存在，则返回null
         }
-
         // 如果用户不存在，继续执行添加操作
-        String sql = "INSERT INTO user (username, password, email, phone) VALUES (?, ?, ?, ?);";
+        String sql = "INSERT INTO user (username, password, email, phone, isdeleted, deletedby) VALUES (?, ?, ?, ?, ?, ?);";
         try (Connection cn = DruidDateUtils.getConnection();
              PreparedStatement pstate = cn.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS)) {
 
@@ -107,6 +110,8 @@ public class UserDao {
             pstate.setString(2, password);
             pstate.setString(3, email);
             pstate.setString(4, phone);
+            pstate.setString(5, isdeleted);
+            pstate.setString(6, deletedby);
 
             // 执行插入操作
             int rowsAffected = pstate.executeUpdate();
@@ -116,7 +121,7 @@ public class UserDao {
                     if (generatedKeys.next()) {
                         int userID = generatedKeys.getInt(1);
                         // 返回新创建的User对象
-                        return new User(userID, username, password, email, phone);
+                        return new User(userID, username, password, email, phone, isdeleted , deletedby);
                     }
                 }
             }
@@ -144,6 +149,8 @@ public class UserDao {
                 user.setEmail(resultSet.getString("email"));
                 user.setPassword(resultSet.getString("password"));
                 user.setPhone(resultSet.getString("phone"));
+                user.setIsdeleted(resultSet.getString("isdeleted"));
+                user.setDeletedby(resultSet.getString("deletedby"));
                 users.add(user);
             }
         }
@@ -173,12 +180,18 @@ public class UserDao {
         }
     }
 
-    public void deleteUser(int userId) throws SQLException {
-        String query = "DELETE FROM user WHERE userID = ?";
+    public boolean deleteUser(int userId,String isdeleted,String adminname) throws SQLException {
+        String query = "UPDATE user SET isdeleted = ? , deletedby = ? WHERE userID = ? ";
         try (Connection connection = DruidDateUtils.getConnection();
              PreparedStatement statement = connection.prepareStatement(query)) {
-            statement.setInt(1, userId);
-            statement.executeUpdate();
+            statement.setString(1,isdeleted);
+            statement.setString(2,adminname);
+            statement.setInt(3, userId);
+            int i = statement.executeUpdate();
+            if(i>0){
+                return true;
+            }
         }
+        return false;
     }
 }

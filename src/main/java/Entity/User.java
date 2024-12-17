@@ -6,15 +6,21 @@ public class User {
     private String password;
     private String email;
     private String phone;
+    private String isdeleted;
+    private String deletedby;
     public User(){
     }
-    public User(int userID,String username,String password,String email,String phone){
+
+    public User(int userID, String username, String password, String email, String phone, String isdeleted, String deletedby) {
         this.userID = userID;
-        this.username=username;
-        this.password=password;
-        this.email=email;
-        this.phone=phone;
+        this.username = username;
+        this.password = password;
+        this.email = email;
+        this.phone = phone;
+        this.isdeleted = isdeleted;
+        this.deletedby = deletedby;
     }
+
     public int getUserID() {
         return userID;
     }
@@ -45,5 +51,21 @@ public class User {
     }
     public void setPhone (String phone) {
         this.phone = phone;
+    }
+
+    public String getIsdeleted() {
+        return isdeleted;
+    }
+
+    public void setIsdeleted(String isdeleted) {
+        this.isdeleted = isdeleted;
+    }
+
+    public String getDeletedby() {
+        return deletedby;
+    }
+
+    public void setDeletedby(String deletedby) {
+        this.deletedby = deletedby;
     }
 }

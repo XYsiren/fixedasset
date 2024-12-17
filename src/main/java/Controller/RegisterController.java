@@ -79,7 +79,7 @@ public class RegisterController extends HttpServlet {
                 jsonResponse.addProperty("message", "Username already exists");
             } else {
                 // 调用 addUser 注册用户
-                User newUser = userDao.addUser(username, password, email, phone);
+                User newUser = userDao.addUser(username, password, email, phone,"","");
 
                 if (newUser != null) {
                     jsonResponse.addProperty("success", true);
