@@ -33,6 +33,39 @@ public class UserDao {
         return false;
     }
 
+    public User findByIdAndName(Integer userID, String username) {
+        User user = null;
+        String sql = "SELECT * FROM user WHERE userID = ? AND username = ?;";
+
+        // 使用 try-with-resources 确保资源会被自动关闭
+        try (Connection cn = DruidDateUtils.getConnection();
+             PreparedStatement pstate = cn.prepareStatement(sql)) {
+
+            pstate.setObject(1, userID);  // 设置用户ID
+            pstate.setString(2, username); // 设置用户名
+
+            try (ResultSet rs = pstate.executeQuery()) {
+                if (rs.next()) {
+                    // 创建 User 对象并填充其属性
+                    int resultUserID = rs.getInt("userID");
+                    String resultUsername = rs.getString("username");
+                    String password = rs.getString("password");
+                    String email = rs.getString("email");
+                    String phone = rs.getString("phone");
+                    String isdeleted = rs.getString("isdeleted");
+                    String deletedby = rs.getString("deletedby");
+
+                    user = new User(resultUserID, resultUsername, password, email, phone, isdeleted, deletedby);
+                }
+            }
+        } catch (SQLException e) {
+            // 记录异常信息
+            System.err.println("数据库查询失败：" + e.getMessage());
+            e.printStackTrace();
+        }
+        return user;
+    }
+
     public static User findByID(Integer userID) throws SQLException {
         User user = null;
         Connection cn = DruidDateUtils.getConnection();
@@ -131,10 +164,6 @@ public class UserDao {
         }
         return null;  // 如果插入失败，返回null
     }
-
-//    private Connection getConnection() throws SQLException {
-//        return DriverManager.getConnection("jdbc:mysql://localhost:3306/fixedasset", "root", "123456");
-//    }
 
     public List<User> getAllUsers() throws SQLException {
         List<User> users = new ArrayList<>();

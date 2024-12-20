@@ -1,14 +1,12 @@
-package Controller.User;
+package Controller.Admin.ManageDevice;
 
-import Dao.DeviceBorrowDao;
 import Dao.DeviceDao;
 import Dao.UserDao;
-import Entity.Device;
-import Entity.User;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
 import javax.servlet.ServletException;
+import javax.servlet.annotation.HttpConstraint;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -18,11 +16,10 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.sql.SQLException;
 
-
-@WebServlet("/borrow-device")
-public class BorrowDeviceController extends HttpServlet {
+@WebServlet("/scrap-device")
+public class ScrapDeviceController extends HttpServlet {
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        // 设置请求和响应的字符编码为UTF-8
+// 设置请求和响应的字符编码为UTF-8
         response.setContentType("application/json;charset=utf-8");
         request.setCharacterEncoding("UTF-8");
         PrintWriter out = response.getWriter();
@@ -41,29 +38,17 @@ public class BorrowDeviceController extends HttpServlet {
             return;
         }
 
-        String username = null;
-        String deviceId = null;
-        String borrowPeriod = null;
+        String deviceID = null;
 
         // 解析 JSON 数据
         try {
             JsonObject jsonObject = JsonParser.parseString(json.toString()).getAsJsonObject();
-
             // 获取字段
-            if (jsonObject.has("deviceId") && !jsonObject.get("deviceId").isJsonNull()) {
-                deviceId = jsonObject.get("deviceId").getAsString();
-            }
-            if (jsonObject.has("username") && !jsonObject.get("username").isJsonNull()) {
-                username = jsonObject.get("username").getAsString();
-            }
-            if (jsonObject.has("borrowPeriod") && !jsonObject.get("borrowPeriod").isJsonNull()) {
-                borrowPeriod = jsonObject.get("borrowPeriod").getAsString();
+            if (jsonObject.has("deviceID") && !jsonObject.get("deviceID").isJsonNull()) {
+                deviceID = jsonObject.get("deviceID").getAsString();
             }
             //验证
-            System.out.println("Username: " + username);
-            System.out.println("deviceId: " + deviceId);
-            System.out.println("borrowPeriod: " + borrowPeriod +"天");
-
+            System.out.println("deviceID: " + deviceID);
         } catch (Exception e) {
             // 捕获 JSON 解析错误
             response.setStatus(HttpServletResponse.SC_BAD_REQUEST); // 400 错误
@@ -71,41 +56,26 @@ public class BorrowDeviceController extends HttpServlet {
             return;
         }
 
-        UserDao userDao = new UserDao();
-        User user = userDao.findByName(username);
-
         // 创建返回的 JSON 对象
         JsonObject jsonResponse = new JsonObject();
-        //把String类型的id转成int
-        int deviceid = Integer.parseInt(deviceId);
         DeviceDao deviceDao = new DeviceDao();
-        Device device = null;
-        try {
-            device = deviceDao.findDeviceByID(deviceid);
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-
         boolean ok = false;
-        DeviceBorrowDao deviceBorrowingDao = new DeviceBorrowDao();
 
-        if (deviceId != null && "在库".equals(device.getStatus())) {
-            try {
-                ok = deviceDao.updateDeviceStatus(deviceid, user.getUserID(),"离库");
-                deviceBorrowingDao.addBorrowing(deviceid,device.getDevicename(),user.getUserID(),username,"未归还",borrowPeriod);
-            } catch (SQLException e) {
-                throw new RuntimeException(e);
-            }
-            if (device != null && ok) {
-                // 借用成功
+        // 如果 action 是 delete，就执行删除操作
+        if (deviceID !=null) {
+            //把String类型的id转成int
+            int deviceid = Integer.parseInt(deviceID);
+            ok = deviceDao.updateDeviceScrapStatus(deviceid,"已报废","仓库");
+
+            if (ok) {
+                // 成功
                 jsonResponse.addProperty("success", true);
-                jsonResponse.addProperty("message", "borrow successful");
+                jsonResponse.addProperty("message", "scrap device successful");
             } else {
-                // 借用失败
+                // 失败
                 jsonResponse.addProperty("success", false);
-                jsonResponse.addProperty("message", "borrow failed");
+                jsonResponse.addProperty("message", "scrap device failed");
             }
-
         }
         // 返回 JSON 响应
         out.write(jsonResponse.toString());

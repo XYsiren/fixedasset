@@ -47,7 +47,27 @@ public class DeviceBorrowDao {
                     borrowing.setUserID(resultSet.getInt("userID"));
                     borrowing.setUsername(resultSet.getString("username"));
                     borrowing.setReturnStatus(resultSet.getString("returnStatus"));
-                    borrowing.setReturnStatus(resultSet.getString("borrowPeriod"));
+                    borrowing.setBorrowPeriod(resultSet.getString("borrowPeriod"));
+                    borrowings.add(borrowing);
+                }
+            }
+        }
+        return borrowings;  // 如果没有匹配借用记录，返回空列表
+    }
+
+    public List<DeviceBorrow> findBorrowingsForUnreturned() throws SQLException {
+        List<DeviceBorrow> borrowings = new ArrayList<>();
+        String query = "SELECT * FROM deviceborrowing WHERE returnStatus = '未归还'";
+        try (Connection connection = DruidDateUtils.getConnection();
+             PreparedStatement statement = connection.prepareStatement(query)) {
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    DeviceBorrow borrowing = new DeviceBorrow();
+                    borrowing.setDeviceID(resultSet.getInt("deviceID"));
+                    borrowing.setDevicename(resultSet.getString("devicename"));
+                    borrowing.setUserID(resultSet.getInt("userID"));
+                    borrowing.setUsername(resultSet.getString("username"));
+                    borrowing.setBorrowPeriod(resultSet.getString("borrowPeriod"));
                     borrowings.add(borrowing);
                 }
             }

@@ -67,8 +67,8 @@ public class LoginController extends HttpServlet {
             UserDao userDao = new UserDao();
             User user = userDao.findByName(username);
 
-            // 验证用户名和密码
-            if (user != null && user.getPassword().equals(password)) {
+            // 验证用户名和密码 并确保用户未被删除
+            if (user != null && user.getPassword().equals(password) && user.getIsdeleted().isEmpty()) {
                 // 登录成功
                 jsonResponse.addProperty("success", true);
                 jsonResponse.addProperty("message", "Login successful");
@@ -79,7 +79,7 @@ public class LoginController extends HttpServlet {
                 if (user == null) {
                     jsonResponse.addProperty("message", "Username not found");
                 } else {
-                    jsonResponse.addProperty("message", "Incorrect password");
+                    jsonResponse.addProperty("message", "Incorrect password or this user is deleted");
                 }
             }
 

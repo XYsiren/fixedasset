@@ -24,21 +24,19 @@ import java.sql.SQLException;
 @WebServlet("/apply-device")
 public class ApplyDeviceController extends HttpServlet {
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        // 设置请求和响应的字符编码为UTF-8
         response.setContentType("application/json;charset=utf-8");
         request.setCharacterEncoding("UTF-8");
         PrintWriter out = response.getWriter();
 
-        // 读取请求体
         BufferedReader reader = request.getReader();
         StringBuilder json = new StringBuilder();
         String line;
         while ((line = reader.readLine()) != null) {
             json.append(line);
         }
-        // 确保请求体不为空
+
         if (json.length() == 0) {
-            response.setStatus(HttpServletResponse.SC_BAD_REQUEST); // 400 错误
+            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             response.getWriter().write("Request body is empty");
             return;
         }
@@ -46,12 +44,10 @@ public class ApplyDeviceController extends HttpServlet {
         String username = null;
         String deviceId = null;
         String deviceName = null;
+        String applyPeriod = null;
 
-        // 解析 JSON 数据
         try {
             JsonObject jsonObject = JsonParser.parseString(json.toString()).getAsJsonObject();
-
-            // 获取字段
             if (jsonObject.has("deviceId") && !jsonObject.get("deviceId").isJsonNull()) {
                 deviceId = jsonObject.get("deviceId").getAsString();
             }
@@ -61,22 +57,17 @@ public class ApplyDeviceController extends HttpServlet {
             if (jsonObject.has("deviceName") && !jsonObject.get("deviceName").isJsonNull()) {
                 deviceName = jsonObject.get("deviceName").getAsString();
             }
-            //验证
-            System.out.println("Username: " + username);
-            System.out.println("deviceId: " + deviceId);
-            System.out.println("deviceName: " + deviceName);
-
+            if (jsonObject.has("applyPeriod") && !jsonObject.get("applyPeriod").isJsonNull()) {
+                applyPeriod = jsonObject.get("applyPeriod").getAsString();
+            }
         } catch (Exception e) {
-            // 捕获 JSON 解析错误
-            response.setStatus(HttpServletResponse.SC_BAD_REQUEST); // 400 错误
+            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             response.getWriter().write("Invalid JSON format: " + e.getMessage());
             return;
         }
 
         UserDao userDao = new UserDao();
         User user = userDao.findByName(username);
-
-        // 创建返回的 JSON 对象
         JsonObject jsonResponse = new JsonObject();
         DeviceDao deviceDao = new DeviceDao();
         Device device = null;
@@ -86,70 +77,58 @@ public class ApplyDeviceController extends HttpServlet {
         int deviceid = 0;
 
         if (deviceId != null) {
-            //把String类型的id转成int
             deviceid = Integer.parseInt(deviceId);
             try {
                 device = deviceDao.findDeviceByID(deviceid);
-
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }
+
             if (device != null && "在库".equals(device.getStatus())) {
-                ok = deviceDao.updateDeviceStatus(deviceid, "离库");
+                // 创建申请记录，状态为“待审核”
                 try {
-                    deviceApplyDao.addApply(deviceid,device.getDevicename(),user.getUserID(),username,"未归还","");
+                    ok = deviceDao.updateReturnStatus(deviceid,"待审核");
+                    if(ok) {
+                        deviceApplyDao.addApply(deviceid, device.getDevicename(), user.getUserID(), username, "待审核", "", "", applyPeriod);
+                        jsonResponse.addProperty("success", true);
+                        jsonResponse.addProperty("message", "Application submitted for approval");
+                    }
                 } catch (SQLException e) {
                     throw new RuntimeException(e);
                 }
-                if(ok) {
-                    // 领用成功
-                    jsonResponse.addProperty("success", true);
-                    jsonResponse.addProperty("message", "Apply successful");
-                }
             } else {
-                // 领用失败
                 jsonResponse.addProperty("success", false);
-                jsonResponse.addProperty("message", "Apply failed. Device is not enough");
+                jsonResponse.addProperty("message", "Apply failed. Device is not available");
             }
 
-        } else if (deviceName != null && "在库".equals(device.getStatus())) {
-
+        } else if (deviceName != null) {
             try {
                 device = deviceDao.findDeviceByName(deviceName);
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }
 
-            if (device != null) {
-                // 登录成功
-                ok = deviceDao.updateDeviceStatus(device.getDeviceID(), "离库");
+            if (device != null && "在库".equals(device.getStatus())) {
+                // 创建申请记录，状态为“待审核”
                 try {
-                    deviceApplyDao.addApply(device.getDeviceID(),device.getDevicename(),user.getUserID(),username,"未归还","");
+                    deviceApplyDao.addApply(deviceid, device.getDevicename(), user.getUserID(), username, "待审核","","", "");
+                    jsonResponse.addProperty("success", true);
+                    jsonResponse.addProperty("message", "Application submitted for approval");
                 } catch (SQLException e) {
                     throw new RuntimeException(e);
                 }
-                if(ok){
-                    jsonResponse.addProperty("success", true);
-                    jsonResponse.addProperty("message", "Apply successful");
-                }else{
-                    jsonResponse.addProperty("success", false);
-                    jsonResponse.addProperty("message", "update status failed");
-                }
             } else {
-                // 登录失败
                 jsonResponse.addProperty("success", false);
-                jsonResponse.addProperty("message", "device not exists");
+                jsonResponse.addProperty("message", "Device not exists or not available");
             }
         }
 
-        // 返回 JSON 响应
         out.write(jsonResponse.toString());
     }
-
-
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         doPost(request, response);
     }
 }
+

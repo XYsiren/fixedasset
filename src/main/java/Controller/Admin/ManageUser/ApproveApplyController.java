@@ -1,5 +1,6 @@
-package Controller.User;
+package Controller.Admin.ManageUser;
 
+import Dao.DeviceApplyDao;
 import Dao.DeviceBorrowDao;
 import Dao.DeviceDao;
 import Dao.UserDao;
@@ -18,9 +19,8 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.sql.SQLException;
 
-
-@WebServlet("/borrow-device")
-public class BorrowDeviceController extends HttpServlet {
+@WebServlet("/approve-apply")
+public class ApproveApplyController extends HttpServlet {
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         // 设置请求和响应的字符编码为UTF-8
         response.setContentType("application/json;charset=utf-8");
@@ -41,28 +41,33 @@ public class BorrowDeviceController extends HttpServlet {
             return;
         }
 
+        String userID = null;
+        String deviceID = null;
         String username = null;
-        String deviceId = null;
-        String borrowPeriod = null;
+        String applyPeriod = null;
 
         // 解析 JSON 数据
         try {
             JsonObject jsonObject = JsonParser.parseString(json.toString()).getAsJsonObject();
 
             // 获取字段
-            if (jsonObject.has("deviceId") && !jsonObject.get("deviceId").isJsonNull()) {
-                deviceId = jsonObject.get("deviceId").getAsString();
+            if (jsonObject.has("userID") && !jsonObject.get("userID").isJsonNull()) {
+                userID = jsonObject.get("userID").getAsString();
+            }
+            if (jsonObject.has("deviceID") && !jsonObject.get("deviceID").isJsonNull()) {
+                deviceID = jsonObject.get("deviceID").getAsString();
             }
             if (jsonObject.has("username") && !jsonObject.get("username").isJsonNull()) {
                 username = jsonObject.get("username").getAsString();
             }
-            if (jsonObject.has("borrowPeriod") && !jsonObject.get("borrowPeriod").isJsonNull()) {
-                borrowPeriod = jsonObject.get("borrowPeriod").getAsString();
+            if (jsonObject.has("applyPeriod") && !jsonObject.get("applyPeriod").isJsonNull()) {
+                applyPeriod = jsonObject.get("applyPeriod").getAsString();
             }
             //验证
-            System.out.println("Username: " + username);
-            System.out.println("deviceId: " + deviceId);
-            System.out.println("borrowPeriod: " + borrowPeriod +"天");
+            System.out.println("userID: " + userID);
+            System.out.println("username: " + username);
+            System.out.println("deviceID: " + deviceID);
+            System.out.println("applyPeriod: " + applyPeriod);
 
         } catch (Exception e) {
             // 捕获 JSON 解析错误
@@ -72,46 +77,34 @@ public class BorrowDeviceController extends HttpServlet {
         }
 
         UserDao userDao = new UserDao();
-        User user = userDao.findByName(username);
+        //把String类型的id转成int
+        int userid = Integer.parseInt(userID);
+        int deviceid = Integer.parseInt(deviceID);
+        //User user = userDao.findByIdAndName(userid,username);
 
         // 创建返回的 JSON 对象
         JsonObject jsonResponse = new JsonObject();
-        //把String类型的id转成int
-        int deviceid = Integer.parseInt(deviceId);
+        DeviceApplyDao deviceApplyDao = new DeviceApplyDao();
         DeviceDao deviceDao = new DeviceDao();
-        Device device = null;
-        try {
-            device = deviceDao.findDeviceByID(deviceid);
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-
         boolean ok = false;
-        DeviceBorrowDao deviceBorrowingDao = new DeviceBorrowDao();
 
-        if (deviceId != null && "在库".equals(device.getStatus())) {
-            try {
-                ok = deviceDao.updateDeviceStatus(deviceid, user.getUserID(),"离库");
-                deviceBorrowingDao.addBorrowing(deviceid,device.getDevicename(),user.getUserID(),username,"未归还",borrowPeriod);
-            } catch (SQLException e) {
-                throw new RuntimeException(e);
-            }
-            if (device != null && ok) {
-                // 借用成功
+        if (deviceID != null && userID != null) {
+           ok = deviceApplyDao.updateApplyStatusForApprove(deviceid,userid,username,applyPeriod);
+           boolean ok2 = deviceDao.updateDeviceStatus(deviceid,userid,"离库");
+            if (ok && ok2) {
+                // 领用成功
                 jsonResponse.addProperty("success", true);
-                jsonResponse.addProperty("message", "borrow successful");
+                jsonResponse.addProperty("message", "approve apply successful");
             } else {
-                // 借用失败
+                // 失败
                 jsonResponse.addProperty("success", false);
-                jsonResponse.addProperty("message", "borrow failed");
+                jsonResponse.addProperty("message", "approve apply failed");
             }
 
         }
         // 返回 JSON 响应
         out.write(jsonResponse.toString());
     }
-
-
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {

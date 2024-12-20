@@ -97,7 +97,7 @@ public class ReturnDeviceController extends HttpServlet {
                 throw new RuntimeException(e);
             }
             if (device != null && "离库".equals(device.getStatus())) {
-                ok = deviceDao.updateDeviceStatus(deviceid, "在库");
+                ok = deviceDao.updateReturnStatus(deviceid, "在库");
                 if(returnType.equals("apply")) {
                     deviceApplyDao.updateApplyStatus(device.getDeviceID(), username, "已归还");
                 }else{
@@ -122,8 +122,7 @@ public class ReturnDeviceController extends HttpServlet {
             }
 
             if (device != null) {
-                // 登录成功
-                ok = deviceDao.updateDeviceStatus(device.getDeviceID(), "在库");
+                ok = deviceDao.updateReturnStatus(device.getDeviceID(), "在库");
                 if(returnType.equals("apply")) {
                     deviceApplyDao.updateApplyStatus(device.getDeviceID(), username, "已归还");
                 }else{

@@ -6,20 +6,22 @@ public class DeviceApply {
     private String devicename;
     private int userID;
     private String username;
+    private String applyStatus;
+    private String approvedby;
     private String returnStatus;
     private String applyPeriod;
 
     public DeviceApply(){
     }
 
-
-
-    public DeviceApply(int applyID, int deviceID, String devicename, int userID, String username, String returnStatus, String applyPeriod) {
+    public DeviceApply(int applyID, int deviceID, String devicename, int userID, String username, String applyStatus, String approvedby, String returnStatus, String applyPeriod) {
         this.applyID = applyID;
         this.deviceID = deviceID;
         this.devicename = devicename;
         this.userID = userID;
         this.username = username;
+        this.applyStatus = applyStatus;
+        this.approvedby = approvedby;
         this.returnStatus = returnStatus;
         this.applyPeriod = applyPeriod;
     }
@@ -77,6 +79,22 @@ public class DeviceApply {
 
     public void setApplyPeriod(String applyPeriod) {
         this.applyPeriod = applyPeriod;
+    }
+
+    public String getApplyStatus() {
+        return applyStatus;
+    }
+
+    public void setApplyStatus(String applyStatus) {
+        this.applyStatus = applyStatus;
+    }
+
+    public String getApprovedby() {
+        return approvedby;
+    }
+
+    public void setApprovedby(String approvedby) {
+        this.approvedby = approvedby;
     }
 }
 
