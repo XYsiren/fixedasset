@@ -1,7 +1,6 @@
 package Controller.Admin.ManageDevice;
 
 import Dao.DeviceDao;
-import Dao.UserDao;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
@@ -17,10 +16,9 @@ import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
-import java.util.Date;
 
 @WebServlet("/putin-storage")
-public class PutInStorage extends HttpServlet {
+public class PutInStorageController extends HttpServlet {
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
 // 设置请求和响应的字符编码为UTF-8
         response.setContentType("application/json;charset=utf-8");
@@ -49,6 +47,7 @@ public class PutInStorage extends HttpServlet {
         String createdAt = null;
         String updatedAt = null;
         String adminname = null;
+        String deviceQuantity = null;
 
         // 解析 JSON 数据
         try {
@@ -79,11 +78,15 @@ public class PutInStorage extends HttpServlet {
             if (jsonObject.has("adminname") && !jsonObject.get("adminname").isJsonNull()) {
                 adminname = jsonObject.get("adminname").getAsString();
             }
+            if (jsonObject.has("deviceQuantity") && !jsonObject.get("deviceQuantity").isJsonNull()) {
+                deviceQuantity = jsonObject.get("deviceQuantity").getAsString();
+            }
 
             //验证
             System.out.println("deviceName: " + deviceName);
             System.out.println("deviceType: " + deviceType);
             System.out.println("purchaseDate: " + purchaseDate );
+            System.out.println("deviceQuantity: " + deviceQuantity );
             System.out.println("warrantyYears: " + warrantyYears + "年" );
             System.out.println("location: " + location );
             System.out.println("createdAt: " + createdAt );
@@ -102,14 +105,26 @@ public class PutInStorage extends HttpServlet {
         DeviceDao deviceDao = new DeviceDao();
         boolean ok = false;
 
+        int number = Integer.parseInt(deviceQuantity);
+
+        LocalDate purchase_date = null;
+        LocalDate create_at = null;
+        LocalDate update_at = null;
+
         // 如果 action 是 delete，就执行删除操作
         if (deviceName != null && deviceType != null && adminname != null) {
             //把String类型的id转成int
-            LocalDate purchase_date = convertStringToDate(purchaseDate);
-            LocalDate create_at = convertStringToDate(createdAt);
-            LocalDate update_at = convertStringToDate(updatedAt);
+            if(purchaseDate != null) {
+                purchase_date = convertStringToDate(purchaseDate);
+            }
+            if(createdAt != null) {
+                create_at = convertStringToDate(createdAt);
+            }
+            if(updatedAt != null) {
+                update_at = convertStringToDate(updatedAt);
+            }
             try {
-                ok = deviceDao.addDeviceAll(deviceName, deviceType, "在库", purchase_date, warrantyYears, location, create_at, update_at, adminname);
+                ok = deviceDao.addDeviceAll(deviceName, deviceType, number, "在库", purchase_date, warrantyYears, location, create_at, update_at, adminname);
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }

@@ -8,10 +8,12 @@ public class User {
     private String phone;
     private String isdeleted;
     private String deletedby;
+    private String disabled;
+    private String disabledby;
     public User(){
     }
 
-    public User(int userID, String username, String password, String email, String phone, String isdeleted, String deletedby) {
+    public User(int userID, String username, String password, String email, String phone, String isdeleted, String deletedby, String disabled, String disabledby) {
         this.userID = userID;
         this.username = username;
         this.password = password;
@@ -19,6 +21,8 @@ public class User {
         this.phone = phone;
         this.isdeleted = isdeleted;
         this.deletedby = deletedby;
+        this.disabled = disabled;
+        this.disabledby = disabledby;
     }
 
     public int getUserID() {
@@ -67,5 +71,21 @@ public class User {
 
     public void setDeletedby(String deletedby) {
         this.deletedby = deletedby;
+    }
+
+    public String getDisabled() {
+        return disabled;
+    }
+
+    public void setDisabled(String disabled) {
+        this.disabled = disabled;
+    }
+
+    public String getDisabledby() {
+        return disabledby;
+    }
+
+    public void setDisabledby(String disabledby) {
+        this.disabledby = disabledby;
     }
 }

@@ -6,6 +6,7 @@ public class Device {
     private int deviceID;
     private String devicename;
     private String type;
+    private int number;
     private String status;
     private Date purchase_date;
     private String warranty_period;//保修年限
@@ -15,13 +16,16 @@ public class Device {
     private Date updated_at;
     private String putinstorageby;
     private String takeoutstorageby;
+    private String imageUrl;
+
 
     public Device(){}
 
-    public Device(int deviceID, String devicename, String type, String status, Date purchase_date, String warranty_period, int user_id, String location, Date created_at, Date updated_at, String putinstorageby, String takeoutstorageby) {
+    public Device(int deviceID, String devicename, String type, int number, String status, Date purchase_date, String warranty_period, int user_id, String location, Date created_at, Date updated_at, String putinstorageby, String takeoutstorageby, String imageUrl) {
         this.deviceID = deviceID;
         this.devicename = devicename;
         this.type = type;
+        this.number = number;
         this.status = status;
         this.purchase_date = purchase_date;
         this.warranty_period = warranty_period;
@@ -31,6 +35,7 @@ public class Device {
         this.updated_at = updated_at;
         this.putinstorageby = putinstorageby;
         this.takeoutstorageby = takeoutstorageby;
+        this.imageUrl = imageUrl;
     }
 
     // Getters and setters
@@ -56,6 +61,14 @@ public class Device {
 
     public void setType(String type) {
         this.type = type;
+    }
+
+    public int getNumber() {
+        return number;
+    }
+
+    public void setNumber(int number) {
+        this.number = number;
     }
 
     public String getStatus() {
@@ -128,5 +141,13 @@ public class Device {
 
     public void setTakeoutstorageby(String takeoutstorageby) {
         this.takeoutstorageby = takeoutstorageby;
+    }
+
+    public String getImageUrl() {
+        return imageUrl;
+    }
+
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
     }
 }

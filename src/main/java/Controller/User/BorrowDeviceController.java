@@ -16,7 +16,10 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.sql.Date;
 import java.sql.SQLException;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 
 
 @WebServlet("/borrow-device")
@@ -44,6 +47,8 @@ public class BorrowDeviceController extends HttpServlet {
         String username = null;
         String deviceId = null;
         String borrowPeriod = null;
+        String returnDueDate = null;
+        String borrowQuantity = null;
 
         // 解析 JSON 数据
         try {
@@ -59,10 +64,18 @@ public class BorrowDeviceController extends HttpServlet {
             if (jsonObject.has("borrowPeriod") && !jsonObject.get("borrowPeriod").isJsonNull()) {
                 borrowPeriod = jsonObject.get("borrowPeriod").getAsString();
             }
+            if (jsonObject.has("returnDueDate") && !jsonObject.get("returnDueDate").isJsonNull()) {
+                returnDueDate = jsonObject.get("returnDueDate").getAsString();
+            }
+            if (jsonObject.has("borrowQuantity") && !jsonObject.get("borrowQuantity").isJsonNull()) {
+                borrowQuantity = jsonObject.get("borrowQuantity").getAsString();
+            }
             //验证
             System.out.println("Username: " + username);
             System.out.println("deviceId: " + deviceId);
+            System.out.println("borrowQuantity: " + borrowQuantity);
             System.out.println("borrowPeriod: " + borrowPeriod +"天");
+            System.out.println("returnDueDate: " + returnDueDate);
 
         } catch (Exception e) {
             // 捕获 JSON 解析错误
@@ -78,6 +91,8 @@ public class BorrowDeviceController extends HttpServlet {
         JsonObject jsonResponse = new JsonObject();
         //把String类型的id转成int
         int deviceid = Integer.parseInt(deviceId);
+        int number = Integer.parseInt(borrowQuantity);
+
         DeviceDao deviceDao = new DeviceDao();
         Device device = null;
         try {
@@ -86,32 +101,45 @@ public class BorrowDeviceController extends HttpServlet {
             throw new RuntimeException(e);
         }
 
-        boolean ok = false;
+        //boolean ok = false;
         DeviceBorrowDao deviceBorrowingDao = new DeviceBorrowDao();
 
-        if (deviceId != null && "在库".equals(device.getStatus())) {
-            try {
-                ok = deviceDao.updateDeviceStatus(deviceid, user.getUserID(),"离库");
-                deviceBorrowingDao.addBorrowing(deviceid,device.getDevicename(),user.getUserID(),username,"未归还",borrowPeriod);
-            } catch (SQLException e) {
-                throw new RuntimeException(e);
-            }
-            if (device != null && ok) {
-                // 借用成功
-                jsonResponse.addProperty("success", true);
-                jsonResponse.addProperty("message", "borrow successful");
-            } else {
-                // 借用失败
-                jsonResponse.addProperty("success", false);
-                jsonResponse.addProperty("message", "borrow failed");
-            }
+        //转换应归还日期格式
+        // 定义日期格式，这里的分隔符使用的是"/"
+        Date sqlDate = null;
+        SimpleDateFormat formatter = new SimpleDateFormat("yyyy/MM/dd");
+        try {
+            // 将字符串解析为 java.util.Date
+            java.util.Date utilDate = formatter.parse(returnDueDate);
+            // 转换为 java.sql.Date
+            sqlDate = new Date(utilDate.getTime());
+            // 打印结果
+            System.out.println("Converted java.sql.Date: " + sqlDate);
+        } catch (ParseException e) {
+            e.printStackTrace();
+            System.out.println("日期格式不正确: " + returnDueDate);
+        }
 
+        if (deviceId != null && "在库".equals(device.getStatus())) {
+            // 创建申请记录，状态为“待审核”
+            try {
+                boolean ok = deviceDao.updateReturnStatus(deviceid,"待审核");
+                //在这里还不能调用decreaseDeviceStock方法减少库存
+                //boolean ok2 = deviceDao.decreaseDeviceStock(deviceid, number);
+                if(ok) {
+                    deviceBorrowingDao.addBorrowing(deviceid, device.getDevicename(), user.getUserID(), username, number, "待审核", "", "", borrowPeriod, sqlDate);
+                    jsonResponse.addProperty("success", true);
+                    jsonResponse.addProperty("message", "Application submitted for approval");
+                }else {
+                    deviceDao.updateReturnStatus(deviceid,"在库");
+                    jsonResponse.addProperty("success", false);
+                    jsonResponse.addProperty("message", "deviceBorrowing addBorrowing failed.");
+                }
+            } catch (SQLException e) {throw new RuntimeException(e);}
         }
         // 返回 JSON 响应
         out.write(jsonResponse.toString());
     }
-
-
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {

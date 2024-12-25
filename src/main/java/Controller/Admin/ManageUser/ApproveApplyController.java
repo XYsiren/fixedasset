@@ -44,6 +44,7 @@ public class ApproveApplyController extends HttpServlet {
         String userID = null;
         String deviceID = null;
         String username = null;
+        String adminname = null;
         String applyPeriod = null;
 
         // 解析 JSON 数据
@@ -60,6 +61,9 @@ public class ApproveApplyController extends HttpServlet {
             if (jsonObject.has("username") && !jsonObject.get("username").isJsonNull()) {
                 username = jsonObject.get("username").getAsString();
             }
+            if (jsonObject.has("adminname") && !jsonObject.get("adminname").isJsonNull()) {
+                adminname = jsonObject.get("adminname").getAsString();
+            }
             if (jsonObject.has("applyPeriod") && !jsonObject.get("applyPeriod").isJsonNull()) {
                 applyPeriod = jsonObject.get("applyPeriod").getAsString();
             }
@@ -67,6 +71,7 @@ public class ApproveApplyController extends HttpServlet {
             System.out.println("userID: " + userID);
             System.out.println("username: " + username);
             System.out.println("deviceID: " + deviceID);
+            System.out.println("adminname: " + adminname);
             System.out.println("applyPeriod: " + applyPeriod);
 
         } catch (Exception e) {
@@ -89,7 +94,7 @@ public class ApproveApplyController extends HttpServlet {
         boolean ok = false;
 
         if (deviceID != null && userID != null) {
-           ok = deviceApplyDao.updateApplyStatusForApprove(deviceid,userid,username,applyPeriod);
+           ok = deviceApplyDao.updateApplyStatusForApprove(deviceid,userid,username,adminname,applyPeriod);
            boolean ok2 = deviceDao.updateDeviceStatus(deviceid,userid,"离库");
             if (ok && ok2) {
                 // 领用成功

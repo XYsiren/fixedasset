@@ -43,8 +43,9 @@ public class ReturnDeviceController extends HttpServlet {
 
         String username = null;
         String deviceId = null;
-        String deviceName = null;
+        String devicename = null;
         String returnType = null;
+        String number = null;
 
         // 解析 JSON 数据
         try {
@@ -57,17 +58,21 @@ public class ReturnDeviceController extends HttpServlet {
             if (jsonObject.has("username") && !jsonObject.get("username").isJsonNull()) {
                 username = jsonObject.get("username").getAsString();
             }
-            if (jsonObject.has("deviceName") && !jsonObject.get("deviceName").isJsonNull()) {
-                deviceName = jsonObject.get("deviceName").getAsString();
+            if (jsonObject.has("devicename") && !jsonObject.get("devicename").isJsonNull()) {
+                devicename = jsonObject.get("devicename").getAsString();
             }
             if (jsonObject.has("returnType") && !jsonObject.get("returnType").isJsonNull()) {
                 returnType = jsonObject.get("returnType").getAsString();
             }
+            if (jsonObject.has("number") && !jsonObject.get("number").isJsonNull()) {
+                number = jsonObject.get("number").getAsString();
+            }
             //验证
             System.out.println("Username: " + username);
             System.out.println("deviceId: " + deviceId);
-            System.out.println("deviceName: " + deviceName);
+            System.out.println("devicename: " + devicename);
             System.out.println("returnType: " + returnType);
+            System.out.println("number: " + number);
         } catch (Exception e) {
             // 捕获 JSON 解析错误
             response.setStatus(HttpServletResponse.SC_BAD_REQUEST); // 400 错误
@@ -91,16 +96,18 @@ public class ReturnDeviceController extends HttpServlet {
         if (deviceId != null) {
             //把String类型的id转成int
             deviceid = Integer.parseInt(deviceId);
+            int borrowNumber = Integer.parseInt(number);
             try {
                 device = deviceDao.findDeviceByID(deviceid);
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }
-            if (device != null && "离库".equals(device.getStatus())) {
-                ok = deviceDao.updateReturnStatus(deviceid, "在库");
+            if (device != null) {
+               // ok = deviceDao.updateReturnStatus(deviceid, "在库");
                 if(returnType.equals("apply")) {
                     deviceApplyDao.updateApplyStatus(device.getDeviceID(), username, "已归还");
                 }else{
+                    ok = deviceDao.increaseDeviceStock(deviceid, borrowNumber);
                     deviceBorrowDao.updateBorrowingStatus(device.getDeviceID(),username,"已归还");
                 }
                 if(ok) {
@@ -110,13 +117,14 @@ public class ReturnDeviceController extends HttpServlet {
                 }
             } else {
                 // 归还失败
+                deviceDao.decreaseDeviceStock(deviceid,borrowNumber);
                 jsonResponse.addProperty("success", false);
-                jsonResponse.addProperty("message", "Return failed. Device is in repo");
+                jsonResponse.addProperty("message", "Return failed. No this device");
             }
 
-        } else if (deviceName != null && "离库".equals(device.getStatus())) {
+        } else if (devicename != null && "离库".equals(device.getStatus())) {
             try {
-                device = deviceDao.findDeviceByName(deviceName);
+                device = deviceDao.findDeviceByName(devicename);
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }

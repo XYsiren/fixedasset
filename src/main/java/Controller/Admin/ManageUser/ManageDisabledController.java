@@ -1,9 +1,6 @@
 package Controller.Admin.ManageUser;
 
 import Dao.UserDao;
-import Entity.User;
-import com.google.gson.Gson;
-import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
@@ -17,10 +14,10 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.sql.SQLException;
 
-@WebServlet("/add-user")
-public class AddUserController extends HttpServlet {
+@WebServlet("/manage-disabled")
+public class ManageDisabledController extends HttpServlet {
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        // 设置请求和响应的字符编码为UTF-8
+// 设置请求和响应的字符编码为UTF-8
         response.setContentType("application/json;charset=utf-8");
         request.setCharacterEncoding("UTF-8");
         PrintWriter out = response.getWriter();
@@ -39,33 +36,28 @@ public class AddUserController extends HttpServlet {
             return;
         }
 
-        String username = null;
-        String password = null;
-        String email = null;
-        String phone = null;
+        String action = null;
+        String userID = null;
+        String adminname = null;
 
         // 解析 JSON 数据
         try {
             JsonObject jsonObject = JsonParser.parseString(json.toString()).getAsJsonObject();
-
             // 获取字段
+            if (jsonObject.has("action") && !jsonObject.get("action").isJsonNull()) {
+                action = jsonObject.get("action").getAsString();
+            }
+            if (jsonObject.has("userID") && !jsonObject.get("userID").isJsonNull()) {
+                userID = jsonObject.get("userID").getAsString();
+            }
             if (jsonObject.has("username") && !jsonObject.get("username").isJsonNull()) {
-                username = jsonObject.get("username").getAsString();
-            }
-            if (jsonObject.has("password") && !jsonObject.get("password").isJsonNull()) {
-                password = jsonObject.get("password").getAsString();
-            }
-            if (jsonObject.has("email") && !jsonObject.get("email").isJsonNull()) {
-                email = jsonObject.get("email").getAsString();
-            }
-            if (jsonObject.has("phone") && !jsonObject.get("phone").isJsonNull()) {
-                phone = jsonObject.get("phone").getAsString();
+                adminname = jsonObject.get("username").getAsString();
             }
             //验证
-            System.out.println("username: " + username);
-            System.out.println("email: " + email);
-            System.out.println("phone: " + phone );
-            System.out.println("password: " + password );
+            System.out.println("action: " + action);
+            System.out.println("userID: " + userID);
+            System.out.println("adminname: " + adminname );
+
         } catch (Exception e) {
             // 捕获 JSON 解析错误
             response.setStatus(HttpServletResponse.SC_BAD_REQUEST); // 400 错误
@@ -76,22 +68,40 @@ public class AddUserController extends HttpServlet {
         // 创建返回的 JSON 对象
         JsonObject jsonResponse = new JsonObject();
         UserDao userDao = new UserDao();
-        User newuser = null;
+        boolean ok = false;
+        //把String类型的id转成int
+        int userid = Integer.parseInt(userID);
 
-        if (username != null && password != null) {
-            newuser = userDao.addUser(username, password, email, phone, "", "","","");
-            if (newuser != null) {
-                // 转换为 JSON 数组
-                Gson gson = new Gson();
-                JsonObject user = gson.toJsonTree(newuser).getAsJsonObject();
-                // 添加成功
+        // 如果 action 是 delete，就执行删除操作
+        if ("disable".equals(action) && userID != null && adminname != null) {
+            try {
+                ok = userDao.updateDisabledStatus(userid, "1", adminname);
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+            if (ok) {
+                // 禁用成功
                 jsonResponse.addProperty("success", true);
-                jsonResponse.addProperty("message", "add user successful");
-                jsonResponse.add("user", user);
+                jsonResponse.addProperty("message", "disabled user successful");
             } else {
-                // 删除失败
+                // 失败
                 jsonResponse.addProperty("success", false);
-                jsonResponse.addProperty("message", "add user failed");
+                jsonResponse.addProperty("message", "disabled user failed");
+            }
+        } else if ("enable".equals(action) && userID != null && adminname != null) {
+            try {
+                ok = userDao.updateEnabledStatus(userid);
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+            if (ok) {
+                // 启用成功
+                jsonResponse.addProperty("success", true);
+                jsonResponse.addProperty("message", "enabled user successful");
+            } else {
+                // 失败
+                jsonResponse.addProperty("success", false);
+                jsonResponse.addProperty("message", "enabled user failed");
             }
         }
         // 返回 JSON 响应

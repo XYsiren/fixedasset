@@ -1,4 +1,4 @@
-package Controller.Admin.ManageUser;
+package Controller.User;
 
 import Dao.DeviceApplyDao;
 import Dao.DeviceBorrowDao;
@@ -16,43 +16,54 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.List;
 
-@WebServlet("/examine-apply")
-public class ExamineApplyController extends HttpServlet {
+@WebServlet("/get-unreturned-devices")
+public class GetUnreturnedController extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         response.setContentType("application/json;charset=utf-8");
+        request.setCharacterEncoding("UTF-8");
         PrintWriter out = response.getWriter();
 
-        // 创建返回的 JSON 对象
+        // Retrieve username from the URL parameter
+        String username = request.getParameter("username");
+
+        // Check if username is provided
+        if (username == null || username.isEmpty()) {
+            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            out.write("Username parameter is missing or empty");
+            return;
+        }
+
+        // Create a JSON response object
         JsonObject jsonResponse = new JsonObject();
         DeviceApplyDao deviceApplyDao = new DeviceApplyDao();
         DeviceBorrowDao deviceBorrowDao = new DeviceBorrowDao();
-        List<DeviceApply> deviceapplyList1 = new ArrayList<>();
-        List<DeviceBorrow> allBorrowsForExamine = new ArrayList<>();
+        List<DeviceApply> appliesForUserUnreturned = null;
+        List<DeviceBorrow> borrowingsForUserUnreturned = null;
+
         try {
-            // 获取设备列表
-            deviceapplyList1 = deviceApplyDao.getAllAppliesForExamine();
-            allBorrowsForExamine = deviceBorrowDao.getAllBorrowsForExamine();
+            // Get device lists
+            appliesForUserUnreturned = deviceApplyDao.findAppliesForUserUnreturned(username);
+            borrowingsForUserUnreturned = deviceBorrowDao.findBorrowingsForUserUnreturned(username);
 
-            // 将设备列表转换为 JSON 数组
+            // Convert device lists to JSON arrays
             Gson gson = new Gson();
-            JsonArray deviceArray1 = gson.toJsonTree(deviceapplyList1).getAsJsonArray();
-            JsonArray deviceArray2 = gson.toJsonTree(allBorrowsForExamine).getAsJsonArray();
+            JsonArray deviceApplyArray = gson.toJsonTree(appliesForUserUnreturned).getAsJsonArray();
+            JsonArray deviceBorrowArray = gson.toJsonTree(borrowingsForUserUnreturned).getAsJsonArray();
 
-            // 构造 JSON 响应
+            // Construct JSON response
             jsonResponse.addProperty("success", true);
             jsonResponse.addProperty("message", "Loading devices list successful");
-            jsonResponse.add("deviceApplyList", deviceArray1);
-            jsonResponse.add("deviceBorrowList", deviceArray2);
+            jsonResponse.add("deviceApplyArray", deviceApplyArray);
+            jsonResponse.add("deviceBorrowArray", deviceBorrowArray);
         } catch (SQLException e) {
-            // 如果发生 SQLException，捕获异常并返回失败响应
+            // In case of SQLException, capture exception and return fail response
             jsonResponse.addProperty("success", false);
             jsonResponse.addProperty("message", "Loading devices list failed: " + e.getMessage());
         }
 
-        // 返回 JSON 响应
+        // Return JSON response
         out.write(jsonResponse.toString());
     }
 

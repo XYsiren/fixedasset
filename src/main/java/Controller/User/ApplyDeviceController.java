@@ -7,7 +7,10 @@ import Dao.DeviceDao;
 import Dao.UserDao;
 import Entity.Admin;
 import Entity.Device;
+import Entity.DeviceApply;
 import Entity.User;
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
@@ -19,7 +22,11 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.sql.Date;
 import java.sql.SQLException;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.List;
 
 @WebServlet("/apply-device")
 public class ApplyDeviceController extends HttpServlet {
@@ -45,6 +52,8 @@ public class ApplyDeviceController extends HttpServlet {
         String deviceId = null;
         String deviceName = null;
         String applyPeriod = null;
+        String returnDueDate = null;
+        String quantity = null;
 
         try {
             JsonObject jsonObject = JsonParser.parseString(json.toString()).getAsJsonObject();
@@ -60,42 +69,61 @@ public class ApplyDeviceController extends HttpServlet {
             if (jsonObject.has("applyPeriod") && !jsonObject.get("applyPeriod").isJsonNull()) {
                 applyPeriod = jsonObject.get("applyPeriod").getAsString();
             }
+            if (jsonObject.has("returnDueDate") && !jsonObject.get("returnDueDate").isJsonNull()) {
+                returnDueDate = jsonObject.get("returnDueDate").getAsString();
+            }
+            if (jsonObject.has("quantity") && !jsonObject.get("quantity").isJsonNull()) {
+                quantity = jsonObject.get("quantity").getAsString();
+            }
         } catch (Exception e) {
             response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
             response.getWriter().write("Invalid JSON format: " + e.getMessage());
             return;
         }
 
+        JsonObject jsonResponse = new JsonObject();
+
         UserDao userDao = new UserDao();
         User user = userDao.findByName(username);
-        JsonObject jsonResponse = new JsonObject();
+
         DeviceDao deviceDao = new DeviceDao();
         Device device = null;
         boolean ok = false;
 
         DeviceApplyDao deviceApplyDao = new DeviceApplyDao();
         int deviceid = 0;
+        int applyNumber = 0;
 
+        //转换应归还日期格式
+        // 定义日期格式，这里的分隔符使用的是"/"
+        Date sqlDate = null;
+        SimpleDateFormat formatter = new SimpleDateFormat("yyyy/MM/dd");
+        try {
+            // 将字符串解析为 java.util.Date
+            java.util.Date utilDate = formatter.parse(returnDueDate);
+            // 转换为 java.sql.Date
+            sqlDate = new Date(utilDate.getTime());
+            // 打印结果
+            System.out.println("Converted java.sql.Date: " + sqlDate);
+        } catch (ParseException e) {
+            e.printStackTrace();
+            System.out.println("日期格式不正确: " + returnDueDate);
+        }
+
+        List<DeviceApply> appliesByUsername = null;
         if (deviceId != null) {
             deviceid = Integer.parseInt(deviceId);
+            applyNumber = Integer.parseInt(quantity);
             try {
                 device = deviceDao.findDeviceByID(deviceid);
-            } catch (SQLException e) {
-                throw new RuntimeException(e);
-            }
+            } catch (SQLException e) {throw new RuntimeException(e);}
 
-            if (device != null && "在库".equals(device.getStatus())) {
-                // 创建申请记录，状态为“待审核”
+            if (device != null) {
                 try {
-                    ok = deviceDao.updateReturnStatus(deviceid,"待审核");
-                    if(ok) {
-                        deviceApplyDao.addApply(deviceid, device.getDevicename(), user.getUserID(), username, "待审核", "", "", applyPeriod);
-                        jsonResponse.addProperty("success", true);
-                        jsonResponse.addProperty("message", "Application submitted for approval");
-                    }
-                } catch (SQLException e) {
-                    throw new RuntimeException(e);
-                }
+                    deviceApplyDao.addApply(deviceid, device.getDevicename(), user.getUserID(), username, applyNumber, "待审核", "", "", applyPeriod, sqlDate);
+                    jsonResponse.addProperty("success", true);
+                    jsonResponse.addProperty("message", "Application submitted for approval");
+                } catch (SQLException e) {throw new RuntimeException(e);}
             } else {
                 jsonResponse.addProperty("success", false);
                 jsonResponse.addProperty("message", "Apply failed. Device is not available");
@@ -104,16 +132,20 @@ public class ApplyDeviceController extends HttpServlet {
         } else if (deviceName != null) {
             try {
                 device = deviceDao.findDeviceByName(deviceName);
-            } catch (SQLException e) {
-                throw new RuntimeException(e);
-            }
+            } catch (SQLException e) {throw new RuntimeException(e);}
 
-            if (device != null && "在库".equals(device.getStatus())) {
-                // 创建申请记录，状态为“待审核”
+            if (device != null) {
                 try {
-                    deviceApplyDao.addApply(deviceid, device.getDevicename(), user.getUserID(), username, "待审核","","", "");
+                    appliesByUsername = deviceApplyDao.findAppliesByUsername(username);//找到该用户所有领用记录
+                    // 将设备列表转换为 JSON 数组
+                    Gson gson = new Gson();
+                    JsonArray borrowedDevices = gson.toJsonTree(appliesByUsername).getAsJsonArray();
+
+                    deviceApplyDao.addApply(deviceid, device.getDevicename(), user.getUserID(), username,applyNumber, "待审核", "", "", applyPeriod, sqlDate);
                     jsonResponse.addProperty("success", true);
                     jsonResponse.addProperty("message", "Application submitted for approval");
+                    jsonResponse.add("borrowedDevices", borrowedDevices);
+
                 } catch (SQLException e) {
                     throw new RuntimeException(e);
                 }

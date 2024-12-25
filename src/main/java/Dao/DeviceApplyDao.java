@@ -34,10 +34,10 @@ public class DeviceApplyDao {
     // 查找申请记录 by username
     public List<DeviceApply> findAppliesByUsername(String username) throws SQLException {
         List<DeviceApply> applies = new ArrayList<>();
-        String query = "SELECT * FROM deviceapply WHERE username LIKE ?";
+        String query = "SELECT * FROM deviceapply WHERE username = ?";
         try (Connection connection = DruidDateUtils.getConnection();
              PreparedStatement statement = connection.prepareStatement(query)) {
-            statement.setString(1, "%" + username + "%");  // 使用通配符进行模糊查询
+            statement.setString(1, username);
             try (ResultSet resultSet = statement.executeQuery()) {
                 while (resultSet.next()) {
                     DeviceApply apply = new DeviceApply();
@@ -46,8 +46,10 @@ public class DeviceApplyDao {
                     apply.setDevicename(resultSet.getString("devicename"));
                     apply.setUserID(resultSet.getInt("userID"));
                     apply.setUsername(resultSet.getString("username"));
+                    apply.setApplyNumber(resultSet.getInt("applyNumber"));
                     apply.setReturnStatus(resultSet.getString("returnStatus"));
                     apply.setApplyPeriod(resultSet.getString("applyPeriod"));
+                    apply.setReturnDueDate(resultSet.getDate("returnDueDate"));
                     applies.add(apply);
                 }
             }
@@ -68,12 +70,35 @@ public class DeviceApplyDao {
                     apply.setUserID(resultSet.getInt("userID"));
                     apply.setUsername(resultSet.getString("username"));
                     apply.setApplyPeriod(resultSet.getString("applyPeriod"));
+                    apply.setReturnDueDate(resultSet.getDate("returnDueDate"));
                     applies.add(apply);
                 }
             }
         }
         return applies;  // 如果没有匹配申请记录，返回空列表
     }
+
+    public List<DeviceApply> findAppliesForUserUnreturned(String username) throws SQLException {
+        List<DeviceApply> applies = new ArrayList<>();
+        String query = "SELECT * FROM deviceapply WHERE returnStatus = '未归还' AND username = ?";
+        try (Connection connection = DruidDateUtils.getConnection();
+             PreparedStatement statement = connection.prepareStatement(query)) {
+             statement.setString(1, username);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    DeviceApply apply = new DeviceApply();
+                    apply.setDeviceID(resultSet.getInt("deviceID"));
+                    apply.setDevicename(resultSet.getString("devicename"));
+                    apply.setUserID(resultSet.getInt("userID"));
+                    apply.setApplyPeriod(resultSet.getString("applyPeriod"));
+                    apply.setReturnDueDate(resultSet.getDate("returnDueDate"));
+                    applies.add(apply);
+                }
+            }
+        }
+        return applies;  // 如果没有匹配申请记录，返回空列表
+    }
+
     public List<DeviceApply> getAllApplies() throws SQLException {
         List<DeviceApply> applies = new ArrayList<>();
         String query = "SELECT * FROM deviceapply";
@@ -124,18 +149,20 @@ public class DeviceApplyDao {
         }
     }
 
-    public void addApply(int deviceID, String devicename, int userID, String username,String applyStatus,String approvedby, String returnStatus, String applyPeriod) throws SQLException {
-        String query = "INSERT INTO deviceapply (deviceID, devicename, userID, username, applyStatus, approvedby, returnStatus, applyPeriod) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+    public void addApply(int deviceID, String devicename, int userID, String username,int applyNumber,String applyStatus,String approvedby, String returnStatus, String applyPeriod, Date returnDueDate) throws SQLException {
+        String query = "INSERT INTO deviceapply (deviceID, devicename, userID, username,applyNumber, applyStatus, approvedby, returnStatus, applyPeriod, returnDueDate) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         try (Connection connection = DruidDateUtils.getConnection();
              PreparedStatement statement = connection.prepareStatement(query)) {
             statement.setInt(1, deviceID);
             statement.setString(2, devicename);
             statement.setInt(3, userID);
             statement.setString(4, username);
-            statement.setString(5, applyStatus);
-            statement.setString(6, approvedby);
-            statement.setString(7, returnStatus);
-            statement.setString(8, applyPeriod);
+            statement.setInt(5, applyNumber);
+            statement.setString(6, applyStatus);
+            statement.setString(7, approvedby);
+            statement.setString(8, returnStatus);
+            statement.setString(9, applyPeriod);
+            statement.setDate(10,returnDueDate);
             statement.executeUpdate();
         }
     }
@@ -159,16 +186,17 @@ public class DeviceApplyDao {
         return false;
     }
 
-    public boolean updateApplyStatusForApprove(int deviceID,int userID, String username,String applyPeriod) {
-        String query = "UPDATE deviceapply SET returnStatus = '未归还', applyStatus = '审核通过',applyPeriod = ?  WHERE deviceID = ? AND userID = ? AND username = ?";
+    public boolean updateApplyStatusForApprove(int deviceID,int userID, String username, String adminname, String applyPeriod) {
+        String query = "UPDATE deviceapply SET returnStatus = '未归还', applyStatus = '审核通过',applyPeriod = ?, approvedby = ? WHERE deviceID = ? AND userID = ? AND username = ?";
 
         try (Connection connection = DruidDateUtils.getConnection();
              PreparedStatement preparedStatement = connection.prepareStatement(query)) {
 
             preparedStatement.setString(1, applyPeriod);
-            preparedStatement.setInt(2, deviceID);
-            preparedStatement.setInt(3, userID);
-            preparedStatement.setString(4, username);
+            preparedStatement.setString(2, adminname);
+            preparedStatement.setInt(3, deviceID);
+            preparedStatement.setInt(4, userID);
+            preparedStatement.setString(5, username);
             int rowsUpdated = preparedStatement.executeUpdate();
             return rowsUpdated > 0;
 
