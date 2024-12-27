@@ -123,19 +123,16 @@ public class BorrowDeviceController extends HttpServlet {
         if (deviceId != null && "在库".equals(device.getStatus())) {
             // 创建申请记录，状态为“待审核”
             try {
-                boolean ok = deviceDao.updateReturnStatus(deviceid,"待审核");
+               // boolean ok = deviceDao.updateReturnStatus(deviceid,"待审核");
                 //在这里还不能调用decreaseDeviceStock方法减少库存
                 //boolean ok2 = deviceDao.decreaseDeviceStock(deviceid, number);
-                if(ok) {
                     deviceBorrowingDao.addBorrowing(deviceid, device.getDevicename(), user.getUserID(), username, number, "待审核", "", "", borrowPeriod, sqlDate);
                     jsonResponse.addProperty("success", true);
                     jsonResponse.addProperty("message", "Application submitted for approval");
-                }else {
-                    deviceDao.updateReturnStatus(deviceid,"在库");
-                    jsonResponse.addProperty("success", false);
-                    jsonResponse.addProperty("message", "deviceBorrowing addBorrowing failed.");
-                }
-            } catch (SQLException e) {throw new RuntimeException(e);}
+            } catch (SQLException e) {
+                jsonResponse.addProperty("success", false);
+                jsonResponse.addProperty("message", "Application failed to submitted for approval");
+                throw new RuntimeException(e);}
         }
         // 返回 JSON 响应
         out.write(jsonResponse.toString());

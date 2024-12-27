@@ -1,6 +1,7 @@
 package Controller.Admin.ManageDevice;
 
 import Dao.DeviceDao;
+import Entity.Device;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
@@ -111,7 +112,6 @@ public class PutInStorageController extends HttpServlet {
         LocalDate create_at = null;
         LocalDate update_at = null;
 
-        // 如果 action 是 delete，就执行删除操作
         if (deviceName != null && deviceType != null && adminname != null) {
             //把String类型的id转成int
             if(purchaseDate != null) {
@@ -124,8 +124,13 @@ public class PutInStorageController extends HttpServlet {
                 update_at = convertStringToDate(updatedAt);
             }
             try {
-                ok = deviceDao.addDeviceAll(deviceName, deviceType, number, "在库", purchase_date, warrantyYears, location, create_at, update_at, adminname);
-            } catch (SQLException e) {
+                Device device = deviceDao.findDeviceByName(deviceName);
+                if(device == null) { //保证相同设备不重复入库
+                    ok = deviceDao.addDeviceAll(deviceName, deviceType, number, "在库", purchase_date, warrantyYears, location, create_at, update_at, adminname);
+                }
+                } catch (SQLException e) {
+                jsonResponse.addProperty("success", false);
+                jsonResponse.addProperty("message", "put in storage failed. device already in storage.");
                 throw new RuntimeException(e);
             }
             if (ok) {
